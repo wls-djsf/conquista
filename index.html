@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Corações em Órbita: O Mestre da Conquista | Simulador 3D em Tempo Real</title>
+    <meta name="description" content="Jogo 3D em tempo real de conquista e empatia em português, inspirado em Kami Nomi zo Shiru Sekai e fundamentado em livros de Psicologia e Game Design.">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Three.js Otimizado para Renderização 3D WebGL Leve -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <!-- 1. MUNDO 3D EM TEMPO REAL (ACADEMIA NOVA AURORA) -->
+    <div id="viewport-3d"></div>
+    <div id="floating-labels-3d"></div>
+
+    <!-- 2. NOTIFICAÇÕES ESTILO NINTENDO SWITCH -->
+    <div id="switch-toast-container"></div>
+
+    <!-- 3. BARRA SUPERIOR (STATUS DO JOGADOR, GRÁFICOS E CONTROLE ATIVO) -->
+    <header id="top-switch-hud">
+        <div class="hud-group">
+            <span id="hud-level" class="hud-stat-pill highlight">Nv. 1</span>
+            <span id="hud-progress" class="hud-stat-pill blue">🌸 Conquistas: 0/5</span>
+            <span id="hud-coins" class="hud-stat-pill">🪙 90</span>
+            <span id="hud-empatia" class="hud-stat-pill">❤️ Empatia 12</span>
+            <span id="hud-carisma" class="hud-stat-pill">✨ Carisma 10</span>
+        </div>
+
+        <div class="hud-group">
+            <span id="hud-device-badge" class="hud-stat-pill">⌨️ Teclado & Mouse Ativo</span>
+            <span id="hud-fps" class="hud-stat-pill">60 FPS</span>
+            <button id="btn-toggle-quality" class="hud-mini-btn" title="Alternar entre Resolução Máxima Switch HD e Modo Leve para PC sem placa de vídeo">✨ Gráfico: Switch HD</button>
+            <button id="btn-cycle-time" class="hud-mini-btn" title="Mudar horário e iluminação do Campus 3D">☀️ Manhã Radiante</button>
+            <button id="btn-toggle-audio" class="hud-mini-btn" title="Ativar/Desativar Trilha Sonora Anime">🔊 Som: On</button>
+        </div>
+    </header>
+
+    <!-- 4. BARRA RÁPIDA DE FASES PROGRESSIVAS (1 A 5) -->
+    <nav id="stage-quickbar" class="hidden">
+        <span class="quickbar-label">🧭 Fases (1–5):</span>
+        <div id="stage-quickbar-list"></div>
+    </nav>
+
+    <!-- 5. BANNER DE INTERAÇÃO POR PROXIMIDADE NO MAPA 3D -->
+    <div id="proximity-prompt-banner" class="hidden" onclick="window.game && window.game.handleInputAction('confirm')"></div>
+
+    <!-- 6. OVERLAY DO TUTORIAL BREVE INTERATIVO -->
+    <section id="tutorial-overlay" class="hidden">
+        <div class="tutorial-banner-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <strong id="tutorial-step-title" style="color:#ffd54f; font-size:15px;">1/5 • Tutorial</strong>
+                <div style="display:flex; gap:8px;">
+                    <button id="btn-tutorial-next" class="hud-mini-btn" style="background:#00c3e3; color:#0f172a;">Próximo [A / E] ➔</button>
+                    <button id="btn-tutorial-skip" class="hud-mini-btn">Pular Tutorial [B / Esc]</button>
+                </div>
+            </div>
+            <p id="tutorial-step-text" style="font-size:13px; color:#e2e8f0; line-height:1.45;"></p>
+        </div>
+    </section>
+
+    <!-- 7. PAINEL DE ENCONTRO & DIÁLOGO EM TEMPO REAL + RETRATO ANIME HD -->
+    <section id="dialogue-panel" class="hidden">
+        <div class="portrait-card-wrap">
+            <canvas id="anime-portrait-canvas" width="360" height="440"></canvas>
+            <div class="affinity-meter-box">
+                <div class="affinity-header">
+                    <span>💖 Afinidade do Coração</span>
+                    <span id="dialogue-affinity-pct">30%</span>
+                </div>
+                <div class="affinity-bar-bg">
+                    <div id="dialogue-affinity-fill"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dialogue-main-card">
+            <div class="dialogue-top-row">
+                <div class="speaker-badges">
+                    <span id="speaker-name-badge">Ayumi Hoshino</span>
+                    <span id="speaker-role-badge">Nível 1 • Etapa 1/3</span>
+                </div>
+                <div id="dialogue-timer-wrap">
+                    <span style="font-size:12px; font-weight:800; color:#80deea;">⏱️ Tempo Real:</span>
+                    <div class="timer-bar-bg">
+                        <div id="dialogue-timer-fill"></div>
+                    </div>
+                    <span id="dialogue-timer-sec">18.0s</span>
+                </div>
+            </div>
+
+            <div id="body-language-cue">👁️ Linguagem Corporal...</div>
+            <div id="dialogue-text-content">"..."</div>
+            <div id="psych-ref-banner">📚 Referência Psicológica: Dale Carnegie & Brené Brown</div>
+
+            <div id="dialogue-options-container"></div>
+
+            <div class="dialogue-QuickActions">
+                <button id="btn-dialogue-use-item" class="hud-mini-btn" style="background:rgba(255,213,79,0.2); border-color:#ffd54f;">
+                    🎒 Usar Item Facilitador [<span data-prompt="items">X / I</span>]
+                </button>
+                <button id="btn-dialogue-psych-tip" class="hud-mini-btn" style="background:rgba(0,195,227,0.2); border-color:#00c3e3;">
+                    🧠 Guia de Psicologia [<span data-prompt="psych">Y / P</span>]
+                </button>
+                <button id="btn-dialogue-leave" class="hud-mini-btn">
+                    🚶 Voltar ao Campus 3D [<span data-prompt="cancel">B / Esc</span>]
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 8. MINIGAME EM TEMPO REAL: SINTONIA DO CORAÇÃO -->
+    <section id="minigame-overlay" class="hidden">
+        <div class="minigame-card">
+            <div id="minigame-stage-title">💖 Sintonia do Coração em Tempo Real</div>
+            <p id="minigame-psych-tip">Mantenha seu Pulso de Empatia azul dentro da frequência emocional rosa!</p>
+
+            <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:800; margin-bottom:8px;">
+                <span style="color:#80deea;">🎮 Controle: Analógico Esq. / Setas ◄ ► ou Segure [A / Espaço]</span>
+                <span style="color:#ffd54f;">⏱️ Tempo: <span id="mg-time-left">14.0s</span></span>
+            </div>
+
+            <div class="mg-radar-track">
+                <div id="mg-target-zone"></div>
+                <div id="mg-player-cursor">💙</div>
+            </div>
+
+            <div class="mg-progress-wrap">
+                <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:800;">
+                    <span>✨ Sincronia Empática para Curar a Lacuna do Coração</span>
+                    <span id="mg-harmony-pct">38%</span>
+                </div>
+                <div class="mg-progress-bar-bg">
+                    <div id="mg-harmony-fill"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 9. TELA INICIAL (ESCOLHA DE CONTROLE + INSPIRAÇÃO KAMI NOMI + NINTENDO SWITCH UI) -->
+    <section id="title-screen">
+        <div class="title-hero-card">
+            <div class="switch-joycon-header">
+                <span>🔴 NINTENDO SWITCH ANIME UI</span>
+                <span>•</span>
+                <span>🔵 3D EM TEMPO REAL • LIVRE PARA TODOS OS PÚBLICOS</span>
+            </div>
+            <h1>Corações em Órbita: O Mestre da Conquista</h1>
+            <p class="title-subtitle">
+                Inspirado em <em>Kami Nomi zo Shiru Sekai</em> • Fundamentado em Livros de Psicologia Real &amp; Ciência do Game Design
+            </p>
+
+            <div class="control-selector-box">
+                <h3>🎮 Escolha sua Preferência de Controle (Pode trocar a qualquer momento):</h3>
+                <div class="ctrl-choices">
+                    <button class="ctrl-choice-btn active" data-scheme="auto">⚡ Detecção Automática</button>
+                    <button class="ctrl-choice-btn" data-scheme="xbox">🎮 Controle Xbox (Com Fio / Sem Fio)</button>
+                    <button class="ctrl-choice-btn" data-scheme="generic">🕹️ Outro Controle USB / Gamepad</button>
+                    <button class="ctrl-choice-btn" data-scheme="keyboard">⌨️ Teclado &amp; Mouse (WASD + E)</button>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap:10px; text-align:left; margin-bottom:22px; font-size:12px; color:#cbd5e1;">
+                <div style="background:rgba(255,255,255,0.05); padding:10px 12px; border-radius:12px;">
+                    <strong style="color:#00c3e3;">🌍 Mundo 3D em Tempo Real</strong><br>
+                    Explore a Academia Nova Aurora a 60 FPS até em PC sem placa de vídeo.
+                </div>
+                <div style="background:rgba(255,255,255,0.05); padding:10px 12px; border-radius:12px;">
+                    <strong style="color:#ffd54f;">🧠 Mentoria nas 3 Tentativas</strong><br>
+                    Se não conseguir em 3 tentativas, o jogo ensina o conceito psicológico e como aplicar!
+                </div>
+                <div style="background:rgba(255,255,255,0.05); padding:10px 12px; border-radius:12px;">
+                    <strong style="color:#ff80ab;">📈 5 Fases Progressivas + Itens</strong><br>
+                    Desenvolva Empatia, Carisma e conquiste itens que facilitam sua jornada.
+                </div>
+            </div>
+
+            <div class="title-cta-row">
+                <button id="btn-start-game" class="btn-primary-switch">▶ Iniciar Jornada [A / Enter]</button>
+                <button id="btn-continue-game" class="btn-secondary-switch hidden">Continuar Jogo Salvo</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 10. MODAL DE MENTORIA PSICOLÓGICA (ACIONADO APÓS 3 TENTATIVAS OU BOTÃO Y/P) -->
+    <div id="mentor-modal" class="switch-modal-backdrop hidden">
+        <div class="switch-modal-window">
+            <div class="modal-header">
+                <h3 style="color:#00c3e3; font-size:20px;">🧠 Mentoria de Psicologia da Conquista (PDSA &amp; Lumi)</h3>
+                <button class="hud-mini-btn btn-close-modal">Fechar [B / Esc]</button>
+            </div>
+
+            <div id="mentor-trigger-banner" class="mentor-alert-banner manual"></div>
+            <div id="mentor-book-ref" style="font-size:13px; color:#ffd54f; font-weight:800; margin-bottom:12px;"></div>
+
+            <div class="mentor-section">
+                <h4>📖 1. O Conceito Psicológico Real</h4>
+                <p id="mentor-concept-title" style="font-weight:700; color:#fff;"></p>
+            </div>
+
+            <div class="mentor-section">
+                <h4>⚠️ 2. Por que as abordagens comuns falham aqui?</h4>
+                <p id="mentor-why-failed"></p>
+            </div>
+
+            <div class="mentor-section">
+                <h4>✨ 3. Como aplicar na prática agora mesmo</h4>
+                <p id="mentor-how-apply"></p>
+            </div>
+
+            <div style="text-align:right; margin-top:16px;">
+                <button id="btn-mentor-apply-now" class="btn-primary-switch" style="padding:10px 24px; font-size:15px;">
+                    Aplicar Conceito no Jogo Agora! [A / Enter]
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 11. MODAL DA MOCHILA & LOJA DE ITENS FACILITADORES [X / Tecla I] -->
+    <div id="items-modal" class="switch-modal-backdrop hidden">
+        <div class="switch-modal-window">
+            <div class="modal-header">
+                <div>
+                    <h3 style="color:#ffd54f; font-size:20px;">🎒 Mochila &amp; Cafeteria Estelar (Itens Facilitadores)</h3>
+                    <p style="font-size:12px; color:#cbd5e1;">Adquira itens com as Moedas Estelares coletadas no mapa 3D para facilitar os encontros e minigames!</p>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span id="shop-coins-display" class="hud-stat-pill highlight">🪙 90</span>
+                    <button class="hud-mini-btn btn-close-modal">Fechar [B / Esc]</button>
+                </div>
+            </div>
+            <div id="items-grid-container"></div>
+        </div>
+    </div>
+
+    <!-- 12. MODAL DO COMPÊNDIO DE LIVROS (PSICOLOGIA & GAME DESIGN) + TROFÉUS [START / H] -->
+    <div id="compendium-modal" class="switch-modal-backdrop hidden">
+        <div class="switch-modal-window">
+            <div class="modal-header">
+                <h3 style="color:#ff80ab; font-size:20px;">📚 Biblioteca de Psicologia, Game Design &amp; Troféus</h3>
+                <button class="hud-mini-btn btn-close-modal">Fechar [B / Esc]</button>
+            </div>
+
+            <h4 style="color:#ffd54f; margin-bottom:8px;">🏆 Suas Conquistas (Troféus Desbloqueados)</h4>
+            <div id="compendium-achievements-list" class="ach-grid" style="margin-bottom:20px;"></div>
+
+            <h4 style="color:#00c3e3; margin-bottom:8px;">📖 Fundamentos Testados dos Livros Utilizados no Jogo</h4>
+            <div id="compendium-books-list"></div>
+        </div>
+    </div>
+
+    <!-- 13. MODAL DE CELEBRAÇÃO DE FASE CONQUISTADA -->
+    <div id="victory-modal" class="switch-modal-backdrop hidden">
+        <div class="switch-modal-window" style="text-align:center;">
+            <div style="font-size:50px; margin-bottom:8px;">🎉💖✨</div>
+            <h2 id="victory-title" style="color:#ffd54f; margin-bottom:6px;">Fase Concluída!</h2>
+            <p id="victory-subtitle" style="color:#00c3e3; font-weight:700; margin-bottom:16px;"></p>
+            <div class="mentor-section" style="text-align:left;">
+                <p id="victory-psych-lesson"></p>
+            </div>
+            <button id="btn-victory-continue" class="btn-primary-switch" style="margin-top:12px;">
+                Continuar Jornada [A / Enter]
+            </button>
+        </div>
+    </div>
+
+    <!-- 14. BARRA INFERIOR ESTILO NINTENDO SWITCH -->
+    <footer id="bottom-switch-bar">
+        <div class="switch-action-group">
+            <span style="font-size:12px; color:#94a3b8; font-weight:700;">
+                Mover 3D: <strong style="color:#fff;" data-prompt="move">WASD / Setas</strong> •
+                Câmera: <strong style="color:#fff;" data-prompt="cam">Q / R</strong>
+            </span>
+        </div>
+
+        <div class="switch-action-group">
+            <button id="hud-btn-interact" class="switch-prompt-btn">
+                <span class="btn-badge green" data-prompt="confirm">A / E</span> Conversar / Confirmar
+            </button>
+            <button id="hud-btn-items" class="switch-prompt-btn">
+                <span class="btn-badge blue" data-prompt="items">X / I</span> Itens Facilitadores
+            </button>
+            <button id="hud-btn-psych" class="switch-prompt-btn">
+                <span class="btn-badge gold" data-prompt="psych">Y / P</span> Mentoria Psicológica
+            </button>
+            <button id="hud-btn-compendium" class="switch-prompt-btn">
+                <span class="btn-badge red" data-prompt="menu">START / H</span> Livros &amp; Troféus
+            </button>
+            <button id="hud-btn-tutorial" class="switch-prompt-btn">
+                <span class="btn-badge">?</span> Tutorial
+            </button>
+        </div>
+    </footer>
+
+    <!-- Scripts do Jogo -->
+    <script src="js/audio.js"></script>
+    <script src="js/portraits.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/world3d.js"></script>
+    <script src="js/gamepad.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
